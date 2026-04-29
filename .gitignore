@@ -1,0 +1,6 @@
+# Ignore real daily plans; publish examples only.
+plans/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md
+!plans/*.example.md
+!plans/README.md
+
+.DS_Store
