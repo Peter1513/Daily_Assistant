@@ -1,0 +1,5 @@
+interface:
+  display_name: "Daily Assistant"
+  short_description: "Maintain a daily Markdown plan"
+  default_prompt: "Use $daily-assistant to plan today."
+  brand_color: "#10A37F"

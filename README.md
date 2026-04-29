@@ -6,10 +6,55 @@ It supports `build`, `edit`, and `delete` planning, checkpoints after every thre
 
 ## Use
 
-Point an agent at `SKILL.md`:
+Daily Assistant is published as a Codex skill, not a Codex plugin.
+
+### Install for Codex
+
+```bash
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo Peter1513/Daily_Assistant \
+  --path . \
+  --name daily-assistant
+```
+
+Restart Codex after installation so the new skill is discovered.
+
+Verify:
+
+```bash
+sed -n '1,20p' ~/.codex/skills/daily-assistant/SKILL.md
+```
+
+### Invoke
+
+After install:
+
+```text
+Use $daily-assistant to plan today.
+```
+
+Without installing, point an agent at `SKILL.md`:
 
 ```text
 Use Daily_Assistant/SKILL.md to maintain today's plan.
+```
+
+### Update
+
+The installer refuses to overwrite an existing skill. To update:
+
+```bash
+rm -rf ~/.codex/skills/daily-assistant
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo Peter1513/Daily_Assistant \
+  --path . \
+  --name daily-assistant
+```
+
+### Remove
+
+```bash
+rm -rf ~/.codex/skills/daily-assistant
 ```
 
 Daily plans live in:
