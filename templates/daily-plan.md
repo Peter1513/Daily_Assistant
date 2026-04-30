@@ -1,25 +1,25 @@
 # Plan YYYY-MM-DD
 
 ## Focus
-- [ ] current active item
+- none
 
 ## Now
-- [ ] task @appetite(25m) @status(active)
+- none
 
 ## Later
-- [ ] deferred task
+- none
 
 ## Questions
-- next question to resolve
+- none
 
 ## Log
-- HH:MM build/edit/delete: reason
+- none
 
 ## Done
-- [x] completed task
+- none
 
 ## Deleted
-- removed task - reason
+- none
 
 ## Time Blocks
-- only added when scheduling is requested
+- none
