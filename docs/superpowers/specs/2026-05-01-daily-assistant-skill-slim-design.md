@@ -91,7 +91,7 @@ SKILL.md 內 references pointer 採 Anthropic Pattern 1：
 實 SKILL.md 內兩處：
 
 1. Clarify Engine 末：`**Examples**: see [references/examples.md](references/examples.md). Load when running Reflect or Commit moves.`
-2. Checkpoint 末：`For full multi-line examples: see [references/examples.md](references/examples.md).`
+2. Checkpoint 末：`**Checkpoint examples**: see [references/examples.md](references/examples.md). Load when writing checkpoint Log entries or validating empty-section handling.`
 
 ## Git 工作流
 
@@ -105,12 +105,46 @@ SKILL.md 內 references pointer 採 Anthropic Pattern 1：
 
 ## Codex Sync
 
+bare `diff -r` 不可用：source 含 `.git/` + 真實 daily plans（`plans/2026-04-30.md`、`plans/2026-05-01.md` 等），codex install copy 皆無。bare diff 必假失敗。
+
+定 **skill payload**（須兩端一致之 artifact 集）：
+
+```text
+SKILL.md
+references/                          # 整 dir
+templates/                           # 整 dir
+agents/                              # 整 dir
+README.md
+LICENSE
+THIRD_PARTY_NOTICES.md
+github-reference-repos.md
+.gitignore
+plans/README.md
+plans/2026-04-30.example.md          # 唯一隨 skill 出之 example plan
+```
+
+**不**屬 payload：`.git/`、`docs/`（dev-only 設計文件）、`plans/<real-day>.md`（user data，僅留於 source）。
+
 實裝計畫末含 sync verification：
 
-1. `diff -r Daily_Assistant /home/peter/.codex/skills/daily-assistant`：預期 source 已含改、codex 端仍舊。
+1. **Payload diff**（package-aware，scope 至上列檔／dir）：
+
+   ```bash
+   SRC=/home/peter/Project/Plan_Build/Daily_Assistant
+   DST=/home/peter/.codex/skills/daily-assistant
+   for f in SKILL.md README.md LICENSE THIRD_PARTY_NOTICES.md \
+            github-reference-repos.md .gitignore \
+            plans/README.md plans/2026-04-30.example.md \
+            templates/daily-plan.md agents/openai.yaml; do
+     diff -q "$SRC/$f" "$DST/$f" || echo "DIFF: $f"
+   done
+   diff -rq "$SRC/references" "$DST/references"
+   ```
+
+   改 source 後此 diff 應顯所有有實質改動之檔。
 2. 依 `README.md` 載之 install procedure 行同步（Plan 階段先 read README 取確切命令）。
 3. 重啟 Codex；召 daily-assistant skill 試 dry-run。
-4. 二端 `diff -r` 為空。
+4. 同 payload diff 重跑，預期空輸出。
 
 ## 驗
 
@@ -132,11 +166,29 @@ L2 — 行為等價（spot-check）：
 - Small 6 + Large 6 條完整（含 deletion-merge 戒律）。
 - Checkpoint mid-clarify → Questions 戒律保。
 - Empty section `- none` 戒律保。
+- **Runtime Verification Boundary 戒律保**：daily intake（build / edit / delete）不跑 `git status`/`diff`/`log` 或他 repo-state command；git 用法限 skill/repo 維護或 user 明求。
 
-L3 — Live trigger：
+L3 — Live trigger（**output assertions**，可觀測）：
 
-- Claude Code session 召 daily-assistant 試 build / edit / delete 三 case；觀 references/examples.md 是否載。
-- Codex 端重啟後同三 case，比 Claude Code 行為一致。
+對每 case 行二類驗：
+
+- **Output assertion**（必過，pass/fail criteria）：
+- **Diagnostic signal**（不過不退，僅警示 risk 1）：
+
+Build case：
+
+- Output: agent 第一句 exact match `What's on your mind?`；intake 起始**不**問 day-level Time Blocks；每 capture 後分類入 `task`/`question`/`thought`/`event`/`maybe` 之一；置於 `Focus`/`Now`/`Later`/`Questions` 之一；checkpoint 觸發於第三 reply 後。
+- Diagnostic: tool/read transcript 顯 `references/examples.md` 於 Reflect / Commit move 時被讀（risk 1 訊號；不讀則升 pointer 強度）。
+
+Edit case：
+
+- Output: `Now` ↔ `Later` ↔ `Questions` 之 move 正確；Log 新增一行 `- HH:MM edit: <reason>`；既存 Log/Done/Deleted 史不損。
+
+Delete case：
+
+- Output: 須先 explicit confirm；item 自 `Focus`/`Now`/`Later`/`Questions`/`Time Blocks` 全處移除；append `Deleted` 含 reason；若刪 focused item，`Focus` 設為 `- none`；Log 新增 `- HH:MM delete: <reason>`。
+
+每 case Codex 端重啟後同跑，比 Claude Code 行為一致。
 
 失敗處置：
 
