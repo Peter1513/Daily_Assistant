@@ -21,6 +21,12 @@ Daily_Assistant/plans/YYYY-MM-DD.md
 
 This path is relative to the current workspace unless the user gives another root. Do not store real daily plans inside the installed skill folder. Each date has one source-of-truth plan file.
 
+## Runtime Verification Boundary
+
+For normal daily plan `build`, `edit`, and `delete` operations, verify only by reading the target plan file after writing. Do not run `git status`, `git diff`, `git log`, or other repo-state commands during daily intake.
+
+Use git only when maintaining the Daily Assistant skill/repo itself, or when the user explicitly asks for review, commit, publish, install-state, or repo-state verification.
+
 ## Opening Prompt
 
 Start intake with exactly:
