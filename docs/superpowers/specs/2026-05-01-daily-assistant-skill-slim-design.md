@@ -125,9 +125,31 @@ plans/2026-04-30.example.md          # 唯一隨 skill 出之 example plan
 
 **不**屬 payload：`.git/`、`docs/`（dev-only 設計文件）、`plans/<real-day>.md`（user data，僅留於 source）。
 
+**Branch ref 須對齊**：`README.md` 之 install command 無 `--ref`，`skill-installer` 預設 `--ref main`（見 `~/.codex/skills/.system/skill-installer/SKILL.md`）。dev 上之改若未 push、未 merge 至 main，照 README reinstall 會抓舊 main，sync 必失。
+
+二階段 sync 策：
+
+- **Verification 階段（dev 未 merge）**：push dev 至 `origin/dev`，install 加 `--ref dev`：
+
+  ```bash
+  python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+    --repo Peter1513/Daily_Assistant \
+    --path . \
+    --name daily-assistant \
+    --ref dev
+  ```
+
+  install 前須先移除 `~/.codex/skills/daily-assistant/`（installer 「Aborts if the destination skill directory already exists」）。
+
+- **正式 release（驗過後）**：merge `dev → main` + push main；後續 user 照 README 命令 reinstall（預設 `--ref main`）即得新版。
+
 實裝計畫末含 sync verification：
 
-1. **Payload diff**（package-aware，scope 至上列檔／dir）：
+1. push `dev` 至 `origin/dev`。
+2. 移舊 install copy（`rm -rf ~/.codex/skills/daily-assistant/`）。
+3. `install-skill-from-github.py --ref dev`（如上）。
+4. 重啟 Codex；召 daily-assistant skill 試 dry-run。
+5. **Payload diff**（package-aware，scope 至下列檔／dir）：
 
    ```bash
    SRC=/home/peter/Project/Plan_Build/Daily_Assistant
@@ -141,10 +163,8 @@ plans/2026-04-30.example.md          # 唯一隨 skill 出之 example plan
    diff -rq "$SRC/references" "$DST/references"
    ```
 
-   改 source 後此 diff 應顯所有有實質改動之檔。
-2. 依 `README.md` 載之 install procedure 行同步（Plan 階段先 read README 取確切命令）。
-3. 重啟 Codex；召 daily-assistant skill 試 dry-run。
-4. 同 payload diff 重跑，預期空輸出。
+   預期空輸出。
+6. L3 live-trigger 三 case 過後，merge `dev → main` 並 push main。
 
 ## 驗
 
@@ -193,15 +213,16 @@ Delete case：
 失敗處置：
 
 - L1 fail → 立修。
-- L2 fail（語意失）→ patch，re-review。
-- L3 fail（Claude 不載 references）→ 升 pointer 句強度（如加 `IMPORTANT: read this file before proceeding`），re-test。
+- L2 fail（語意失）→ patch SKILL.md / references，re-review，重 L1+L2。
+- L3 **output assertion** fail（build / edit / delete 行為錯）→ patch SKILL.md semantics，rerun affected case，re-review。
+- L3 **diagnostic** fail（references 未載入但 output 仍正）→ 升 pointer 句強度（如加 `IMPORTANT: read this file before proceeding`），re-test diagnostic。
 
 ## 風險
 
 | # | 風險 | 解 |
 |---|---|---|
 | R1 | Pointer 失準：Claude / Codex 不主動讀 references | Anthropic Pattern 1 句式 + condition phrase（"Load when ..."）；one level deep；TOC in references。L3 驗。失則升強度。 |
-| R2 | Codex sync：`/home/peter/.codex/skills/daily-assistant/` 未含 `references/` | Implementation plan 末含 sync step：reinstall 重啟 Codex 後 `diff -r` 驗。 |
+| R2 | Codex sync：`/home/peter/.codex/skills/daily-assistant/` 未含 `references/`，且 README install 預設 `--ref main`，dev 上之改無法直 reinstall | Plan 末 sync step：push `dev`、`--ref dev` reinstall、重啟 Codex、行 payload diff（scope 至 skill payload 檔／dir，排除 `.git/`、`docs/`、real plans）；驗過後 merge dev→main。 |
 | R3 | caveman lite 影響非英母語 LLM 解析 | lite 為最輕級（drop articles / fragments OK），且僅作於 SKILL.md body 之 prose，frontmatter / fixed prompts / code 不動，風險小。L3 驗。 |
 | R4 | RVB section（dev 枝 uncommitted）丟失 | commit 1 先 commit 為 baseline，後續 refactor 在其上。 |
 
