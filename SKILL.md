@@ -2,188 +2,80 @@
 name: daily-assistant
 description: Use when planning a day or maintaining today's Markdown plan through capture, clarification, placement, scheduling, editing, or deletion.
 ---
-
 # Daily Assistant
-
-Use this skill to maintain one daily Markdown plan through one-question-at-a-time dialogue.
-
-Daily Assistant accepts tasks, thoughts, ideas, questions, events, and maybe items. Do not force the user to phrase an intake item as a task before clarification.
-
-Daily Assistant focuses on `build`, `edit`, and `delete` operations. It does not use Google Calendar, Gmail, Drive, or Tasks in the initial version.
-
+Maintain one daily Markdown plan via one-question-at-a-time dialogue. Items: tasks, thoughts, ideas, questions, events, maybe. Don't force task phrasing before clarify. v1: no Calendar/Gmail/Drive/Tasks integration.
 ## Plan Location
-
-Daily plans live at:
-
-```text
-Daily_Assistant/plans/YYYY-MM-DD.md
-```
-
-This path is relative to the current workspace unless the user gives another root. Do not store real daily plans inside the installed skill folder. Each date has one source-of-truth plan file.
-
-## Runtime Verification Boundary
-
-For normal daily plan `build`, `edit`, and `delete` operations, verify only by reading the target plan file after writing. Do not run `git status`, `git diff`, `git log`, or other repo-state commands during daily intake.
-
-Use git only when maintaining the Daily Assistant skill/repo itself, or when the user explicitly asks for review, commit, publish, install-state, or repo-state verification.
-
-## Opening Prompt
-
+`Daily_Assistant/plans/YYYY-MM-DD.md`, relative to workspace unless user gives root. Don't store real plans inside installed skill folder. One file per date.
+## Runtime Verification
+For build/edit/delete ops: verify by reading target plan after writing. Don't run `git status`/`diff`/`log` during intake. Use git only for skill/repo maintenance, or when user explicitly asks repo-state check.
+## Opening
 Start intake with exactly:
-
-```text
-What's on your mind?
-```
-
-Never ask a day-level `Time Blocks` or scheduling question at intake start.
-
+> What's on your mind?
+Don't ask day-level Time Blocks at intake start; reason: Time Blocks belong per-item after clarify, see Time Block section below.
 ## Conversation Workflow
-
-Use this loop for each captured item:
-
-1. Capture the user's reply as a raw item.
-2. Clarify with the smallest useful next question.
-3. Classify the item as `task`, `question`, `thought`, `event`, or `maybe`.
-4. Place the item in `Focus`, `Now`, `Later`, or `Questions`.
-5. Ask about `Time Blocks` only after the item is clarified and placed.
-6. Checkpoint after every three user answers, or immediately if the user asks to write.
+Per captured item:
+1. Capture reply as raw item.
+2. Clarify with smallest useful next question. (Clarify Engine below.)
+3. Classify: `task` / `question` / `thought` / `event` / `maybe`.
+4. Place in `Focus` / `Now` / `Later` / `Questions`.
+5. Ask Time Block only after placement.
+6. Checkpoint every 3 user answers, or on user write request.
 7. Ask `Anything else on your mind?`
-
-If the user says no, close intake, set empty sections to `- none`, and append one closing `Log` entry.
-
+If no, close intake, set empty sections to `- none`, append closing `Log` entry.
 ## Clarify Engine
-
-Clarify uses four moves: `Reflect -> Test -> Shape -> Commit`.
-
-### Reflect
-
-Briefly mirror the captured item without over-processing it.
-
-### Test
-
-Ask one question that reduces the largest uncertainty. Prefer one of these:
-
-- `Is this something you want to act on today?`
-- `Is there a concrete next action here?`
-- `Should this stay as a thought/question for now?`
-- `Is this tied to a specific time today?`
-
-### Shape
-
-Shape by answer:
-
-- actionable + today: ask for appetite if missing.
-- actionable + not today: place in `Later`.
-- vague but important: ask whether to turn it into one next action.
-- pure thought: place in `Later` or `Questions`.
-- decision or inquiry: place in `Questions`, unless user wants an action to answer it.
-- fixed-time event: place as a scheduled candidate.
-
-### Commit
-
-State the planned placement, then ask time block only if useful.
-
-**Examples**: see [references/examples.md](references/examples.md). Load when running Reflect or Commit moves.
-
-## Clarify Priority
-
-Ask only one question at a time. Use this order:
-
+Four moves: `Reflect -> Test -> Shape -> Commit`. One question at a time.
+**Reflect**: mirror the captured item briefly, no over-processing.
+**Test**: ask one question that reduces the largest uncertainty. Priority order:
 1. Is it for today?
 2. Is there a next action?
 3. How much time does it need?
 4. Does it need a time block?
-5. If still vague, keep it in `Later` or `Questions`; do not force task shape.
-
+5. If still vague, keep in `Later`/`Questions`; don't force task shape.
+Candidate Test questions:
+- `Is this something you want to act on today?`
+- `Is there a concrete next action here?`
+- `Should this stay as a thought/question for now?`
+- `Is this tied to a specific time today?`
+**Shape**: by answer:
+- actionable + today -> ask appetite if missing.
+- actionable + not today -> place `Later`.
+- vague but important -> ask whether to make one next action.
+- pure thought -> place `Later` or `Questions`.
+- decision/inquiry -> place `Questions`, unless user wants action to answer it.
+- fixed-time event -> scheduled candidate.
+**Commit**: state planned placement, then ask Time Block if useful.
+**Examples**: see [references/examples.md](references/examples.md). Load when running Reflect or Commit moves.
 ## Classify Rules
-
-- `task`: actionable; user can do, start, finish, contact, write, clean, decide, or review.
-- `question`: unresolved decision or inquiry, such as whether, how, why, or should.
-- `thought`: idea, feeling, observation, vague desire, or possible direction.
-- `event`: tied to a fixed time today.
-- `maybe`: kept, but not committed today.
-
+- `task`: actionable; user can do, start, finish, contact, write, clean, decide, review.
+- `question`: unresolved decision/inquiry (whether/how/why/should).
+- `thought`: idea, feeling, observation, vague desire, possible direction.
+- `event`: tied to fixed time today.
+- `maybe`: kept, not committed today.
 ## Place Rules
-
-- `Focus`: one current active task only; mirror the active `Now` item.
-- `Now`: actionable item user intends to touch today.
-- `Later`: actionable-but-not-now items, maybe items, and thoughts kept without action.
-- `Questions`: unresolved questions or captured items that still need clarification.
-- `Time Blocks`: only after item placement; only with a time or explicit schedule request.
-- `Done` and `Deleted`: preserve existing behavior.
-
-## Time Block Rule
-
-Never ask a day-level scheduling question at intake start.
-
-Ask per item after clarification and placement:
-
-```text
-Time block this item? You can give a time, or say no/later.
-```
-
-If the user gives a time range, add `Time Blocks` and infer `@appetite(...)` from the duration unless the user gave another estimate. If the user says no or later, do not ask again for that item.
-
-## Daily Plan Sections
-
-Use these sections:
-
+- `Focus`: one current active task; mirrors current `Now` item.
+- `Now`: actionable, user intends to touch today.
+- `Later`: actionable-not-now, maybe items, kept thoughts.
+- `Questions`: unresolved questions, or items still needing clarify.
+- `Time Blocks`: only after placement; only with time or explicit schedule request.
+- `Done` / `Deleted`: existing behavior.
+## Time Block
+Per item, after clarify and placement:
+> Time block this item? You can give a time, or say no/later.
+If user gives time range: add `Time Blocks`, infer `@appetite(...)` from duration unless user gave estimate. If no/later: don't reask for that item.
+## Sections Schema
+See `templates/daily-plan.md` for the full section list. Empty section uses `- none`. Don't write a bare dash; reason: empty section must remain visibly populated to avoid confusion with truncation or in-progress edits.
+## Changes
+| Type | Examples | Action |
+|---|---|---|
+| Small | add one item; move one item between Now/Later/Questions; update one item status; add one Question; add one Log entry; move one task to Done | write directly |
+| Large | delete/replace whole section; overwrite full plan; delete multiple items; modify Log/Deleted history; add write-capable external integrations | require explicit confirm before write |
+Deletion (after confirm): remove from `Focus`/`Now`/`Later`/`Questions`/`Time Blocks` where present, append to `Deleted` with short reason. If deleting focused item leaves no active task, set `Focus` to `- none`.
+## Checkpoint
+Update plan, append one concise `Log` entry. Preserve earlier `Log`/`Done`/`Deleted` history. Format:
 ```md
-# Plan YYYY-MM-DD
-
-## Focus
-- none
-
-## Now
-- none
-
-## Later
-- none
-
-## Questions
-- none
-
-## Log
-- none
-
-## Done
-- none
-
-## Deleted
-- none
-
-## Time Blocks
-- none
+- HH:MM build: <summary>
+- HH:MM edit: <reason>
+- HH:MM delete: <reason>
 ```
-
-## Small Changes
-
-Small changes may be written directly:
-
-- Add one item.
-- Move one item between `Now`, `Later`, and `Questions`.
-- Update one item status.
-- Add one `Questions` item.
-- Add one `Log` entry.
-- Move one completed task to `Done`.
-
-## Large Changes
-
-Large changes require explicit confirmation before writing:
-
-- Delete or replace an entire section.
-- Overwrite the full daily plan.
-- Delete multiple items at once.
-- Modify existing `Log` history.
-- Modify existing `Deleted` history.
-- Add write-capable external integrations.
-
-When deleting an item after confirmation, remove it from `Focus`, `Now`, `Later`, `Questions`, and `Time Blocks` where present, then append it to `Deleted` with a short reason. If deleting the focused item leaves no active task, set `Focus` to `- none`.
-
-## Checkpoint Format
-
-At checkpoint, update the daily plan and add one concise `Log` entry. Preserve earlier `Log`, `Done`, and `Deleted` history.
-
 **Checkpoint examples**: see [references/examples.md](references/examples.md). Load when writing checkpoint Log entries or validating empty-section handling.
-
-If an item is mid-clarification at checkpoint time, store the next question in `Questions` rather than forcing the item into `Now` or `Later`.
+If item mid-clarify at checkpoint: store next question in `Questions`; don't force into `Now`/`Later`.
