@@ -59,13 +59,6 @@ Clarify uses four moves: `Reflect -> Test -> Shape -> Commit`.
 
 Briefly mirror the captured item without over-processing it.
 
-Examples:
-
-```text
-Got it: "整理房間".
-Sounds like a thought, not yet a task.
-```
-
 ### Test
 
 Ask one question that reduces the largest uncertainty. Prefer one of these:
@@ -90,12 +83,7 @@ Shape by answer:
 
 State the planned placement, then ask time block only if useful.
 
-Examples:
-
-```text
-I will place this in Now at 60m. Time block it?
-I will keep this in Later as a thought. Anything else on your mind?
-```
+**Examples**: see [references/examples.md](references/examples.md). Load when running Reflect or Commit moves.
 
 ## Clarify Priority
 
@@ -196,20 +184,6 @@ When deleting an item after confirmation, remove it from `Focus`, `Now`, `Later`
 
 At checkpoint, update the daily plan and add one concise `Log` entry. Preserve earlier `Log`, `Done`, and `Deleted` history.
 
-Examples:
-
-```md
-- HH:MM build: captured and placed three intake items.
-- HH:MM edit: moved item to Later because priority changed.
-- HH:MM delete: moved obsolete item to Deleted.
-```
-
-Empty sections must use:
-
-```md
-- none
-```
-
-Never write a bare dash.
+**Checkpoint examples**: see [references/examples.md](references/examples.md). Load when writing checkpoint Log entries or validating empty-section handling.
 
 If an item is mid-clarification at checkpoint time, store the next question in `Questions` rather than forcing the item into `Now` or `Later`.
